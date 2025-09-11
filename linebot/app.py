@@ -1,7 +1,8 @@
 import os
 import uvicorn
 from fastapi import FastAPI, Request, HTTPException
-from linebot.v3.webhooks import WebhookParser, MessageEvent, TextMessageContent, ImageMessageContent
+# 將 WebhookParser 替換為 WebhookHandler
+from linebot.v3.webhooks import WebhookHandler, MessageEvent, TextMessageContent, ImageMessageContent
 from linebot.v3.messaging import Configuration, ApiClient, MessagingApi, TextMessage, ReplyMessage
 from dotenv import load_dotenv
 
@@ -18,7 +19,8 @@ if not LINE_CHANNEL_ACCESS_TOKEN or not LINE_CHANNEL_SECRET:
 
 # 初始化 LINE Bot SDK
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
-handler = WebhookParser(LINE_CHANNEL_SECRET)
+# 將 WebhookParser 替換為 WebhookHandler
+handler = WebhookHandler(LINE_CHANNEL_SECRET)
 app = FastAPI()
 
 # 接收 LINE 平台傳來的 Webhook 事件
@@ -27,8 +29,8 @@ async def handle_callback(request: Request):
     signature = request.headers.get("X-Line-Signature")
     body = await request.body()
     try:
-        # 使用 WebhookParser 來解析 Webhook 事件，它會回傳一個事件列表
-        events = handler.parse(body.decode("utf-8"), signature)
+        # 使用 WebhookHandler 來解析 Webhook 事件，它會回傳一個事件列表
+        events = handler.handle(body.decode("utf-8"), signature)
     except Exception as e:
         print(f"Error: {e}")
         raise HTTPException(status_code=400, detail="Invalid signature or bad request")
@@ -69,3 +71,6 @@ def handle_message_event(event: MessageEvent):
                     messages=[TextMessage(text=response_message)]
                 )
             )
+
+if __name__ == "__main__":
+    uvicorn.run("app:app", host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
